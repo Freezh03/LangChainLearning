@@ -53,7 +53,7 @@ class LlmStreamThread(QThread):
 class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
-        self.setWindowTitle("LangChain PySide6 UI")
+        self.setWindowTitle("小助手 UI")
         self.resize(800, 600)
 
         # 组件
@@ -86,7 +86,7 @@ class MainWindow(QMainWindow):
             return
         # 清空输入框，追加用户提问
         self.input_edit.clear()
-        self.output_text.append(f"\n【用户】：{prompt}\n【AI】：")
+        self.output_text.append(f"\n【用户】：{prompt}\n【小助手】：")
 
         # 创建并启动流式线程
         self.stream_thread = LlmStreamThread(prompt)
