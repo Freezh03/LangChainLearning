@@ -1,13 +1,20 @@
 import os
 
 import sqlite3
+from typing import Any
+
 from dotenv import load_dotenv
 from langchain.agents import create_agent
+from langchain.agents.middleware import AgentMiddleware
 from langchain.chat_models import init_chat_model
 from langchain_community.tools import WriteFileTool, ReadFileTool, ListDirectoryTool
 from langchain_core.tools import BaseTool
 from langgraph.checkpoint.sqlite import SqliteSaver
+from langgraph.runtime import Runtime
 from langgraph.store.memory import InMemoryStore
+from langgraph.store.sqlite import SqliteStore
+from langgraph.types import StateT
+from langgraph.typing import ContextT
 
 load_dotenv()
 prefix = "SILICONFLOW"
@@ -40,13 +47,30 @@ class CalculateTool(BaseTool):
         return self._run(expression)
 
 
+# 第一个middleware 用于记录模型调用的日志
+class LoggingMiddleware(AgentMiddleware):
+    def before_model(self, state: StateT, runtime: Runtime[ContextT]) -> None:
+        print(f"【日志】即将调用模型，当前消息数：{len(state['messages'])}")
+
+    def after_model(self, state: StateT, runtime: Runtime[ContextT]) -> None:
+        last_msg = state['messages'][-1]
+        print(f"【日志】模型已响应{last_msg.content[:50]}...")
+
+
+# 第二个middleware 用于安全检查，拦截危险操作
+class SafetyMiddleware(AgentMiddleware):
+    def before_model(self, state: StateT, runtime: Runtime[ContextT]) -> dict[str, Any] | None:
+        last_msg
+
+
 calculate = CalculateTool()
 write_file = WriteFileTool()
 read_file = ReadFileTool()
 list_dir = ListDirectoryTool()
-conn = sqlite3.connect("checkpoint.db", check_same_thread=False)
-checkpointer = SqliteSaver(conn)
-store = InMemoryStore()
+checkpoint_conn = sqlite3.connect("agent.db", check_same_thread=False, isolation_level=None)
+checkpointer = SqliteSaver(checkpoint_conn)
+store_conn = sqlite3.connect("agent.db", check_same_thread=False, isolation_level=None)
+store = SqliteStore(store_conn)
 
 agent = create_agent(
     model=model,
@@ -75,4 +99,5 @@ for q in queries:
     response = agent.invoke({"messages": [{"role": "user", "content": q}]}, config=config)
     print(f"\n答：{response["messages"][-1].content}")
 
-conn.close()
+checkpoint_conn.close()
+store_conn.close()

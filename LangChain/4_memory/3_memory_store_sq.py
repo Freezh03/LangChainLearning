@@ -8,6 +8,7 @@ from langchain_community.tools import WriteFileTool, ReadFileTool, ListDirectory
 from langchain_core.tools import BaseTool
 from langgraph.checkpoint.sqlite import SqliteSaver
 from langgraph.store.memory import InMemoryStore
+from langgraph.store.sqlite import SqliteStore
 
 load_dotenv()
 prefix = "SILICONFLOW"
@@ -44,9 +45,10 @@ calculate = CalculateTool()
 write_file = WriteFileTool()
 read_file = ReadFileTool()
 list_dir = ListDirectoryTool()
-conn = sqlite3.connect("checkpoint.db", check_same_thread=False)
-checkpointer = SqliteSaver(conn)
-store = InMemoryStore()
+checkpoint_conn = sqlite3.connect("agent.db", check_same_thread=False, isolation_level=None)
+checkpointer = SqliteSaver(checkpoint_conn)
+store_conn = sqlite3.connect("agent.db", check_same_thread=False, isolation_level=None)
+store = SqliteStore(store_conn)
 
 agent = create_agent(
     model=model,
@@ -75,4 +77,5 @@ for q in queries:
     response = agent.invoke({"messages": [{"role": "user", "content": q}]}, config=config)
     print(f"\n答：{response["messages"][-1].content}")
 
-conn.close()
+checkpoint_conn.close()
+store_conn.close()
