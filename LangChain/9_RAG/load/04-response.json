@@ -1,0 +1,62 @@
+{
+  "code": 200,
+  "message": "数据请求成功",
+  "data": [
+    {
+      "module_id": "MOD001",
+      "module_name": "首页推荐",
+      "sort": 1,
+      "items": [
+        {
+          "item_id": "ITEM00101",
+          "title": "Python零基础入门教程",
+          "content": "本教程从Python环境搭建开始，手把手教你掌握变量、数据类型、循环等基础语法，适合纯新手学习。",
+          "read_count": 12580,
+          "publish_time": "2024-01-15"
+        },
+        {
+          "item_id": "ITEM00102",
+          "title": "JSON数据格式详解",
+          "content": "JSON是轻量级数据交换格式，本文讲解JSON的语法规则、嵌套结构、与Python的交互方法，附实战案例。",
+          "read_count": 8960,
+          "publish_time": "2024-02-20"
+        }
+      ]
+    },
+    {
+      "module_id": "MOD002",
+      "module_name": "热门评论",
+      "sort": 2,
+      "items": [
+        {
+          "item_id": "ITEM00201",
+          "user_name": "小李",
+          "content": "教程太实用了，跟着学完已经能写简单的爬虫脚本了！",
+          "like_count": 356,
+          "comment_time": "2024-01-20"
+        },
+        {
+          "item_id": "ITEM00202",
+          "user_name": "小王",
+          "content": "JSON嵌套这块一直没搞懂，看了文章终于理清思路了，感谢作者！",
+          "like_count": 289,
+          "comment_time": "2024-02-25"
+        }
+      ]
+    },
+    {
+      "module_id": "MOD003",
+      "module_name": "用户笔记",
+      "sort": 3,
+      "items": [
+        {
+          "item_id": "ITEM00301",
+          "user_id": "USER1001",
+          "content": "学习总结：1. JSON键名必须用双引号；2. 嵌套数组用[]；3. content字段存储核心文本内容。",
+          "tag": ["学习笔记", "JSON"],
+          "update_time": "2024-03-01"
+        }
+      ]
+    }
+  ]
+}

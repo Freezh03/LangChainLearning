@@ -1,16 +1,16 @@
 import os
-
 import sqlite3
 from dotenv import load_dotenv
 from langchain.agents import create_agent
 from langchain.chat_models import init_chat_model
 from langchain_community.tools import WriteFileTool, ReadFileTool, ListDirectoryTool
-from langgraph.store.memory import InMemoryStore
+from langchain_core.messages import ToolMessage
 from langchain_core.tools import BaseTool
 from langgraph.checkpoint.sqlite import SqliteSaver
+from langgraph.types import Command
 
 load_dotenv()
-prefix = "DASHSCOPE"
+prefix = "SILICON"
 model = init_chat_model(
     model_provider="openai",
     configurable_fields=["model", "api_key", "base_url"],
@@ -44,9 +44,8 @@ calculate = CalculateTool()
 write_file = WriteFileTool()
 read_file = ReadFileTool()
 list_dir = ListDirectoryTool()
-conn = sqlite3.connect("checkpoint.db", check_same_thread=False)
-checkpointer = SqliteSaver(conn)
-store = InMemoryStore()
+checkpoint_conn = sqlite3.connect("checkpoint.db", check_same_thread=False, isolation_level=None)
+checkpointer = SqliteSaver(checkpoint_conn)
 
 agent = create_agent(
     model=model,
@@ -54,24 +53,20 @@ agent = create_agent(
     system_prompt="你是一助手,会用工具计算，读写文件，列出目录。",
     debug=True,
     checkpointer=checkpointer,
-    store=store,
+    interrupt_before=["tools"]  # 工具节点执行前会暂停Agent。等待人工确认
 )
-config = {"configurable": {"thread_id": "session-1"}}
-store.put(
-    ("user", "user-1"),
-    "profile",
-    {"name": "张三", "role": "developer", "skills": ["python", "typescript", "java"]}
-)
-profile = store.get(("user", "user-1"), "profile")
-print(f"用户资料：{profile.value}")
-queries = ["计算2024*12+500，然后把结果保存到result.txt",
-           "读取 result.txt的内容",
-           "列出当前目录文件",
-           "刚才计算的结果是多少？"
-           ]
-for q in queries:
-    print(f"\n问:{q}")
-    response = agent.invoke({"messages": [{"role": "user", "content": q}]}, config=config)
-    print(f"\n答：{response["messages"][-1].content}")
+config = {"configurable": {"thread_id": "session-2"}}
 
-conn.close()
+q = "计算2024*12+500"
+response = agent.invoke({"messages": [{"role": "user", "content": q}]}, config=config)
+print(f"Agent已暂停，最后消息：{response["messages"][-1].content[:100]}...")
+user_input = input("确认执行？(yes/no): ")  #等待人工输入指令，人机协同，在关键操作前加入人工审批环节
+if user_input == "yes":
+    response = agent.invoke(Command(resume=user_input), config=config)
+    for message in reversed(response["messages"]):   # 倒序查询第一条消息ToolMessage
+        if isinstance(message, ToolMessage):
+            print(f"答：{message.content}")
+            break
+else:
+    print("已取消")
+checkpoint_conn.close()
