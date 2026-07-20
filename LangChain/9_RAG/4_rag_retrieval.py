@@ -2,11 +2,13 @@ from langchain_community.document_loaders import (
     TextLoader, CSVLoader, JSONLoader, PyPDFLoader
 )
 from langchain_text_splitters import RecursiveCharacterTextSplitter
+from modelscope.ops.image_control_3d_portrait.torch_utils.persistence import persistent_class
 from sentence_transformers import SentenceTransformer
 import numpy as np
+from langchain_chroma import Chroma
 
 # TextLoader
-txt_loader = TextLoader("load/01-langchain-utf-8.txt", encoding="utf-8")
+txt_loader = TextLoader("load/clothes.txt", encoding="utf-8")
 txt_docs = txt_loader.load()
 
 # CSVLoader
@@ -20,7 +22,7 @@ json_loader = JSONLoader(file_path="load/04-load.json",
 json_docs = json_loader.load()
 
 # Markdown
-md_loader = TextLoader("load/06-load.md", encoding="utf-8")
+md_loader = TextLoader("load/2025report.md", encoding="utf-8")
 md_docs = md_loader.load()
 
 # PyPDFLoader
@@ -65,9 +67,57 @@ def get_top_similar(query_text, vectors, chunk_texts, topn_n=3):
         similarities.append((i, score))
     similarities.sort(key=lambda x: x[1], reverse=True)
     return similarities[:topn_n]
-   
 
-for query in ["LangChain是一个AI应用开发框架", "是大语言模型应用的开发工具","LangChain有哪些典型的应用场景"]:
-    print(f"\n'{query}'与各文本块的相似度（Top 3）：")
-    for idx, score in get_top_similar(query, vectors, chunk_texts):
-        print(f"相似度{score:.4f}:{chunk_texts[idx][:60]}")
+
+#
+# for query in ["LangChain是一个AI应用开发框架", "是大语言模型应用的开发工具","LangChain有哪些典型的应用场景"]:
+#     print(f"\n'{query}'与各文本块的相似度（Top 3）：")
+#     for idx, score in get_top_similar(query, vectors, chunk_texts):
+#         print(f"相似度{score:.4f}:{chunk_texts[idx][:60]}")
+
+
+persist_directory = "chroma_study_db"
+
+
+class LocalEmbedding:
+    def embed_documents(self, texts):
+        return model.encode(texts).tolist()
+
+    def embed_query(self, text):
+        return model.encode([text])[0].tolist()
+
+
+embedding_function = LocalEmbedding()
+vectorstore = Chroma.from_documents(
+    documents=chunks,
+    embedding=embedding_function,
+    persist_directory=persist_directory
+)
+print(f"向量库存储条数：{vectorstore._collection.count()}")
+
+query = "有没有简约通勤纯棉长袖衬衫?"
+results = vectorstore.similarity_search(query, k=2)
+for i, doc in enumerate(results):
+    print(f"{i + 1}.{doc.page_content[:80]}")
+    print(f"元数据：{doc.metadata}")
+results_mmr = vectorstore.max_marginal_relevance_search(
+    query,
+    k=2,
+    fetch_k=10,
+    lambda_mult=0.7
+)
+for i, doc in enumerate(results_mmr):
+    print(f"{i + 1}.{doc.page_content[:80]}")
+results_filtered = vectorstore.similarity_search(
+    "长袖衬衫",
+    k=2,
+    filter={"gender": "女"}
+)
+
+for doc in results_filtered:
+    print(f"{doc.page_content[:80]}")
+retrieve = vectorstore.as_retriever(
+    search_type="similarity",
+    search_kwargs={"k": 1}
+)
+print(retrieve.invoke("有没有简约通勤纯棉长袖衬衫?"))
