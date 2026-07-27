@@ -8,7 +8,7 @@ from langchain_core.tools import tool, BaseTool
 from langgraph.checkpoint.memory import MemorySaver
 
 load_dotenv()
-prefix = "SILICONFLOW"
+prefix = "SILICON"
 model = init_chat_model(
     model_provider="openai",
     configurable_fields=["model", "api_key", "base_url"],
