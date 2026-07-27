@@ -2,8 +2,10 @@ from langchain_community.document_loaders import (
     TextLoader, CSVLoader, JSONLoader, PyPDFLoader
 )
 from langchain_text_splitters import RecursiveCharacterTextSplitter
+from modelscope.ops.image_control_3d_portrait.torch_utils.persistence import persistent_class
 from sentence_transformers import SentenceTransformer
 import numpy as np
+from langchain_chroma import Chroma
 
 # TextLoader
 txt_loader = TextLoader("load/01-langchain-utf-8.txt", encoding="utf-8")
@@ -65,9 +67,30 @@ def get_top_similar(query_text, vectors, chunk_texts, topn_n=3):
         similarities.append((i, score))
     similarities.sort(key=lambda x: x[1], reverse=True)
     return similarities[:topn_n]
-   
 
-for query in ["LangChain是一个AI应用开发框架", "是大语言模型应用的开发工具","LangChain有哪些典型的应用场景"]:
-    print(f"\n'{query}'与各文本块的相似度（Top 3）：")
-    for idx, score in get_top_similar(query, vectors, chunk_texts):
-        print(f"相似度{score:.4f}:{chunk_texts[idx][:60]}")
+
+#
+# for query in ["LangChain是一个AI应用开发框架", "是大语言模型应用的开发工具","LangChain有哪些典型的应用场景"]:
+#     print(f"\n'{query}'与各文本块的相似度（Top 3）：")
+#     for idx, score in get_top_similar(query, vectors, chunk_texts):
+#         print(f"相似度{score:.4f}:{chunk_texts[idx][:60]}")
+
+
+persist_directory = "chroma_study_db"
+
+
+class LocalEmbedding:
+    def embed_documents(self, texts):
+        return model.encode(texts).tolist()
+
+    def embed_query(self, text):
+        return model.encode([text])[0].tolist()
+
+
+embedding_function = LocalEmbedding()
+vectorstore = Chroma.from_documents(
+    documents=chunks,
+    embedding=embedding_function,
+    persist_directory=persist_directory
+)
+print(f"向量库存储条数：{vectorstore._collection.count()}")
