@@ -1,2 +1,6 @@
 LangChainnotes/.env
 LangChain/.env
+.env
+env
+.env.local
+.env.production
