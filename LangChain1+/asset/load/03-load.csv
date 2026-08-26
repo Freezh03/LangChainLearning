@@ -1,0 +1,8 @@
+模块,作用
+Models,集成各类 LLM（OpenAI、Anthropic、国产大模型）、聊天模型（ChatOpenAI）
+Prompts,提示词模板管理（自定义 / 从 Hub 拉取）
+Tools,集成外部工具（搜索、Python 执行、数据库查询、API 调用）
+Agents,智能体（自主思考→选工具→执行→总结）
+Memory,上下文记忆（短期 / 长期）
+Chains,链式调用（串联多个步骤）
+Document Loaders,加载各类文档（PDF、Excel、网页）
